@@ -1,0 +1,36 @@
+{
+  "name": "tree",
+  "description": "lightweight tree component",
+  "version": "0.0.3",
+  "keywords": [
+    "tree",
+    "drag",
+    "drop"
+  ],
+  "demo": "http://chemzqm.github.io/tree/",
+  "dependencies": {
+    "component/classes": "*",
+    "component/query": "*",
+    "component/domify": "*",
+    "component/emitter": "*",
+    "chemzqm/events": "*",
+    "chemzqm/movearound": "*"
+  },
+  "development": {
+    "dependencies": {
+      "component/dom": "*"
+    }
+  },
+  "license": "MIT",
+  "main": "index.js",
+  "scripts": [
+    "index.js"
+  ],
+  "templates": [
+    "template.html"
+  ],
+  "styles": [
+    "tree.css"
+  ],
+  "repository": "chemzqm/tree"
+}

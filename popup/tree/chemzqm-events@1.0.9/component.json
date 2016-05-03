@@ -1,0 +1,22 @@
+{
+  "name": "events",
+  "repository": "chemzqm/events",
+  "description": "Higher level dom event management",
+  "version": "1.0.9",
+  "keywords": [
+    "event",
+    "events",
+    "subscriptions"
+  ],
+  "dependencies": {
+    "chemzqm/tap-event": "*",
+    "component/event": "*",
+    "discore/closest": "*",
+    "component/delegate": "*"
+  },
+  "development": {},
+  "license": "MIT",
+  "scripts": [
+    "index.js"
+  ]
+}
