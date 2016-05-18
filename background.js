@@ -8,7 +8,7 @@ chrome.extension.onMessage.addListener(function(message, sender, sendResponse) {
         var path = [server, 'morph?form='].join('/');
         var query = [path, message.form].join('');
         var xhr = new XMLHttpRequest();
-        xhr.open("GET", query, false);
+        xhr.open("GET", query, true);
         xhr.onreadystatechange = function() {
             if (xhr.readyState == 4) {
                 var res = JSON.parse(xhr.responseText);
@@ -22,7 +22,7 @@ chrome.extension.onMessage.addListener(function(message, sender, sendResponse) {
         var path = [server, 'dicts?dicts='].join('/');
         var query = [path, message.dicts].join('');
         var xhr = new XMLHttpRequest();
-        xhr.open("GET", query, false);
+        xhr.open("GET", query, true);
         xhr.onreadystatechange = function() {
             if (xhr.readyState == 4) {
                 var res = JSON.parse(xhr.responseText);
@@ -35,3 +35,5 @@ chrome.extension.onMessage.addListener(function(message, sender, sendResponse) {
     }
     return true;
 });
+
+function log() { console.log.apply(console, arguments) }

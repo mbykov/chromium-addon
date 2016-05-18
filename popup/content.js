@@ -1,15 +1,12 @@
 //
 'use strict';
 
-var domify = require('component/domify');
 var classes = require('component/classes');
 var salita = require('mbykov/salita');
 var events = require('component/events');
-var offset = require('timoxley/offset');
 var draggable = require('./draggable');
-// var dict = require('./dict');
-var Tree = require('./tree/chemzqm-tree@0.0.3');
-// var akshara = require('./akshara');
+// var Tree = require('chemzqm/tree');
+var Tree = require('./tree');
 var akshara = require('mbykov/akshara');
 
 var c = {}
@@ -34,6 +31,7 @@ document.addEventListener("keydown", function(ev) {
         oEd.focus();
     }
 }, false);
+
 document.addEventListener("keydown", function(ev) {
     if (ev.keyCode == 13) { // Enter
         if (ev.target.id != 'akshara') return;
@@ -50,7 +48,7 @@ document.addEventListener("keydown", function(ev) {
 }, false);
 
 function messToBack(message) {
-    chrome.extension.sendMessage(message, function(response) {
+    chrome.runtime.sendMessage(message, function(response) {
         // cb(response);
     });
 }
@@ -62,12 +60,12 @@ function cleanNagari(str) {
 document.addEventListener('dblclick', function(ev){
     var selection = window.getSelection();
 
-    var nagari = selection.toString().split(' ')[0]; // FIXME: cleanSelection() написать should be simple nagari
+    var nagari = selection.toString().split(' ')[0];
     nagari = nagari.trim();
     nagari = cleanNagari(nagari);
 
     if (!nagari || nagari == '') return;
-    showTranslit();
+    showTranslit(); // indicator.gif
     var iast;
     if (!/[a-zA-Z]/.test(nagari[0])) {
         iast = salita.sa2iast(nagari);
@@ -95,7 +93,7 @@ document.addEventListener('dblclick', function(ev){
 var morph;
 var oldCoords;
 
-chrome.extension.onMessage.addListener(function(msg, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(function(msg, sender, sendResponse) {
     if (msg.action == 'morph_result') {
         closeAll();
         morph = msg.res.morph;
@@ -111,16 +109,71 @@ function getCoords() {
     var selection = window.getSelection();
     var oRange = selection.getRangeAt(0); //get the text range
     var oRect = oRange.getBoundingClientRect();
-    var scroll = q('body').scrollTop;
-    return {top: oRect.top + scroll, left: oRect.left};
+    var bodyScrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+    return {top: oRect.top +  bodyScrollTop, left: oRect.left};
 }
 
-// FIXME: TODO: нужно сделать объект? как?
+function createPopup() {
+    var pop = cre('div');
+    pop.id = 'morph-popup';
+    classes(pop).add('morph-popup');
+    var oClear = cre('div');
+    oClear.id = 'morph-clear-button';
+    classes(oClear).add('morph-clear-button');
+    oClear.textContent = 'clear';
+    pop.appendChild(oClear);
+    var oAkshara = cre('div');
+    oAkshara.id = 'akshara';
+    // akshara.setAttribute('placeholder', 'on');
+    classes(oAkshara).add('morph-editor');
+    oAkshara.setAttribute('type', 'text');
+    pop.appendChild(oAkshara);
+    var oVersion = cre('div');
+    oVersion.id = 'zayana';
+    classes(oVersion).add('zayana');
+    var oVersionText = cre('span');
+    oVersionText.textContent = 'शयन';
+    oVersion.appendChild(oVersionText);
+    classes(oVersionText).add('nagari');
+    var oVersionText2 = cret(' (Morpheus v.0.3) ');
+    oVersion.appendChild(oVersionText2);
+    classes(oVersion).add('zayana');
+    pop.appendChild(oVersion);
+    var oX = cre('div');
+    oX.id = 'morph-x';
+    oX.textContent = '[x]';
+    classes(oX).add('morph-x');
+    pop.appendChild(oX);
+    var oExter = cre('div');
+    oExter.id = 'morph-exter';
+    classes(oExter).add('morph-inner');
+    pop.appendChild(oExter);
+    var oInner = cre('div');
+    oInner.id = 'morph-inner';
+    classes(oInner).add('morph-inner');
+    oExter.appendChild(oInner);
+    var oPdch = cre('div');
+    oPdch.id = 'morph-pdch';
+    classes(oPdch).add('morph-pdch');
+    oInner.appendChild(oPdch);
+    var oMorph = cre('div');
+    oMorph.id = 'morph-morph';
+    classes(oMorph).add('morph-morph');
+    oInner.appendChild(oMorph);
+    var oDict = cre('div');
+    oDict.id = 'morph-dict';
+    classes(oDict).add('morph-dict');
+    oInner.appendChild(oDict);
+    return pop;
+}
+
+//
 function showPopup(res, target) {
     closeAll();
-    var popup = domify(require('./popup.html'));
+    var popup = createPopup();
     q('body').appendChild(popup);
     var coords = (target == 'akshara') ? oldCoords : getCoords();
+    // var coords;
     if (target == 'acala') {
         coords = oldCoords;
     } else {
@@ -131,7 +184,7 @@ function showPopup(res, target) {
     oldCoords = coords;
     placePopup(coords, popup);
     drawPopup(res, popup);
-    var exter = q('#exter');
+    var exter = q('#morph-exter');
     var drag = new draggable(popup);
     // this.drag = drag;
     var exterev = events(exter, {
@@ -144,7 +197,7 @@ function showPopup(res, target) {
     });
     exterev.bind('mousedown', 'onmousedown');
     exterev.bind('mouseup', 'onmouseup');
-    var x = q('#x');
+    var x = q('#morph-x');
     var xev = events(x, {
         onclick: function(e) {
             closeAll();
@@ -154,11 +207,11 @@ function showPopup(res, target) {
     var zayana = q('#zayana');
     var zayanaev = events(zayana, {
         onclick: function(e) {
-            drawZayana(popup);
+            drawHelp(popup);
         },
     });
     zayanaev.bind('click', 'onclick');
-    var oClear = q('#clear-button');
+    var oClear = q('#morph-clear-button');
     var clearev = events(oClear, {
         onclick: function(e) {
             var oEd = q('#akshara');
@@ -169,15 +222,23 @@ function showPopup(res, target) {
     clearev.bind('click', 'onclick');
 }
 
-function drawZayana(popup) {
-    var oPdch = q('#pdch');
+function drawHelp(popup) {
+    var oPdch = q('#morph-pdch');
     empty(oPdch);
-    var oMorph = q('#morph');
+    var oMorph = q('#morph-morph');
     empty(oMorph);
     classes(oMorph).remove('khaki');
-    var oDict = q('#dict');
+    var oDict = q('#morph-dict');
     empty(oDict);
-    var oHelp = domify(require('./help.html'));
+    var oHelp = cre('div');
+    classes(oHelp).add('help');
+    var text = require('./help.txt');
+    var rows = text.split('\n');
+    rows.forEach(function(row) {
+        var oStr = cre('p');
+        oStr.textContent = row;
+        oHelp.appendChild(oStr);
+    })
     oDict.appendChild(oHelp);
 }
 
@@ -190,30 +251,35 @@ function drawPopup(res, popup) {
     if (res.morph) drawPdchs(res.morph, popup);
     else {
         oEd.focus();
-        var oDict = q('#dict');
+        var oDict = q('#morph-dict');
         oDict.textContent = 'too long, please select part of a word';
     }
 }
 
 function drawPdchs(morph, popup) {
-    var oPdch = q('#pdch');
+    var oPdch = q('#morph-pdch');
     var oUl = cre('ul');
+    classes(oUl).add('morph-popup');
     oPdch.appendChild(oUl);
-    // console.log('DRAW MORPH', morph);
     if (typeof(morph) == 'string') {
-        var oLi = cret(morph);
+        var oLi = cre('li');
+        oLi.textContent = morph;
+        classes(oLi).add('morph-popup');
         oUl.appendChild(oLi);
         return;
     }
     var pdchs = (morph.pdchs) ? morph.pdchs : morph.holeys;
     if (!morph.pdchs) pdchs.unshift({chain: ['-- holyes--']});
     if (pdchs.length == 0) {
-        var oLi = cret('no result');
+        var oLi = cre('li');
+        oLi.textContent = 'no result';
+        classes(oLi).add('morph-popup');
         oUl.appendChild(oLi);
         return;
     }
     pdchs.forEach(function(pdch) {
         var oLi = cre('li');
+        classes(oLi).add('morph-pdch-line');
         var chain = pdch.chain.join(' - ');
         var oPadas = pdch.chain.map(function(pada) { return sa(pada)});
         var size = oPadas.length - 1;
@@ -222,16 +288,17 @@ function drawPdchs(morph, popup) {
             var defis = cret(' - ');
             if (idx < size) oLi.appendChild(defis);
         });
-        // oLi.textContent = chain;
         oUl.appendChild(oLi);
     });
 }
 
-// здесь coords берется из selection
+// coords from selection
 function showTranslit(iast) {
     var oTip = q('#tip');
     if (oTip) oTip.parentElement.removeChild(oTip);
-    oTip = domify(require('./translit.html'));
+    oTip = cre('div');
+    oTip.id = 'tip';
+    classes(oTip).add('translit');
     if (iast) oTip.textContent = iast;
     else {
         var img = cre('img');
@@ -279,10 +346,6 @@ function sa(str) {
     return oSa;
 }
 
-// classes(ed).remove('section');
-// classes(ed).add('editable');
-
-
 function empty(el) {
     while (el.hasChildNodes()) {
         el.removeChild(el.lastChild);
@@ -294,8 +357,7 @@ function remove(el) {
 }
 
 function closeAll() {
-    var popups = qs('.popup');
-    // if (!popups) return;
+    var popups = qs('.morph-popup');
     var arr = [].slice.call(popups);
     arr.forEach(function(popup) {
         popup.parentElement.removeChild(popup);
@@ -306,7 +368,7 @@ function closeAll() {
     // FIXME: нельзя - после закрытия мне нужен getCoords
 }
 
-window.onkeyup = function(e) {
+document.onkeyup = function(e) {
     if (e.which === 27) { //Esc
         closeAll();
         window.getSelection().removeAllRanges();
@@ -326,10 +388,21 @@ Translit.prototype.show = function(ev){
     if (ev.shiftKey != true) return;
     var span = ev.target;
     // if (span.nodeName != 'SPAN') return;
-    var off = offset(span);
+    // var off = offset(span);
+    var bodyScrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+    var off = {};
+    var rect = span.getBoundingClientRect();
+    off.left  = rect.left;
+    off.top = rect.top + bodyScrollTop;
+
     if (!off) return;
     var text = span.textContent;
-    var oTip = domify(require('./translit.html'));
+    var oTip = q('#tip');
+    if (oTip) oTip.parentElement.removeChild(oTip);
+    oTip = cre('div');
+    oTip.id = 'tip';
+    classes(oTip).add('translit');
+
     var iast = salita.sa2iast(text);
     oTip.textContent = iast;
     q('body').appendChild(oTip);
@@ -347,8 +420,8 @@ Translit.prototype.hide = function(ev){
 var pdch = new Pdch();
 function Pdch() {
     this.events = events(document, this);
-    this.events.bind('click #pdch span.nagari', 'morph');
-    this.events.bind('click #morph span.nagari', 'dict');
+    this.events.bind('click #morph-pdch span.nagari', 'morph');
+    this.events.bind('click #morph-morph span.nagari', 'dict');
     // this.events.bind('mouseout span', 'hide');
 }
 
@@ -387,10 +460,12 @@ function unique(arr){
 }
 
 function drawDicts() {
-    var oDict = q('#dict');
+    var oDict = q('#morph-dict');
     remove(oDict);
-    oDict = domify(require('./dict.html'));
-    var oInner = q('#inner');
+    oDict = cre('div');
+    oDict.id = 'morph-dict'
+    classes(oDict).add('morph-dict-line');
+    var oInner = q('#morph-inner');
     oInner.appendChild(oDict);
 
     var tree = new Tree(oDict);
@@ -443,14 +518,13 @@ function treeMW(dict) {
     return arr;
 }
 
-
 Pdch.prototype.morph = function(ev){
     var span = ev.target;
     if (span.nodeName != 'SPAN') return;
     var flake = span.textContent;
-    var oMorph = q('#morph');
+    var oMorph = q('#morph-morph');
     empty(oMorph);
-    var oDict = q('#dict');
+    var oDict = q('#morph-dict');
     empty(oDict);
     var dict_ids = []; //
     var qcleans = [];
@@ -459,17 +533,18 @@ Pdch.prototype.morph = function(ev){
     });
     morph.qcleans = qcleans;
     drawMorphs(qcleans);
-    // drawMorphs(qmorphs);
 }
 
 function drawMorphs(qcleans) {
-    var oMorph = q('#morph');
+    var oMorph = q('#morph-morph');
     // empty(oMorph);
     classes(oMorph).add('khaki');
     var oUl = cre('ul');
+    classes(oUl).add('morph-popup');
     oMorph.appendChild(oUl);
     qcleans.forEach(function(q, idx) {
         var oLi = cre('li');
+        classes(oLi).add('morph-popup');
         var mtext = q.flake;
         oLi.setAttribute('idx', idx);
         if (q.name || q.ind) {
@@ -544,6 +619,7 @@ function morphology(morph) {
 }
 
 function groupGend(orig) {
+    if (!orig) return [];
     var newArr = [],
         gends = {},
         newItem, i, j, cur;

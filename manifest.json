@@ -1,18 +1,18 @@
 {
     "name": "Morpheus - Chromium-plugin for Sanskrit",
     "description": "a simple samasa-splitter, morph analyzer and dictionaries for Sanskrit",
-    "version": "0.3.1",
-    "permissions": ["alarms", "tabs", "contextMenus", "declarativeWebRequest", "*://*/*"],
+    "version": "0.3.3.0",
+    "permissions": ["alarms", "tabs", "contextMenus", "*://*/*"],
     "content_scripts": [
         {
             "matches": ["http://*/*", "https://*/*"],
-            "css": ["data/morpheus.css", "popup/translit.css", "popup/popup.css", "popup/tree/chemzqm-tree@0.0.3/tree.css"],
+            "css": ["popup/translit.css", "popup/popup.css", "popup/tree/tree.css"],
             "js": ["build/popup/content.js"]
         }
     ],
     "web_accessible_resources": [
         "fonts/*.*",
-        "popup/img/*.gif"
+        "popup/img/indicator.gif"
     ],
     "background": {
         "scripts": ["background.js"],
